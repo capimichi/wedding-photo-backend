@@ -6,6 +6,7 @@ import (
 	"wedding-photo-backend/internal/weddingphoto/controller"
 	"wedding-photo-backend/internal/weddingphoto/manager"
 	"wedding-photo-backend/internal/weddingphoto/service"
+	"wedding-photo-backend/internal/weddingphoto/util"
 
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -45,8 +46,10 @@ func main() {
 		c.Next()
 	})
 
-	photosDir := "media"
-	baseUrl := "http://localhost:8080"
+	host := util.GetEnv("HOST", "0.0.0.0")
+	port := util.GetEnv("PORT", "8080")
+	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8080")
+	photosDir := util.GetEnv("PHOTOS_DIR", "media")
 
 	photoManager := manager.NewPhotoManager(photosDir)
 	urlManager := manager.NewUrlManager(baseUrl)
@@ -65,7 +68,7 @@ func main() {
 
 	// Avvia il server sulla porta 8080
 	log.Println("Server avviato su http://localhost:8080")
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(host + ":" + port); err != nil {
 		log.Fatal("Errore nell'avvio del server:", err)
 	}
 }
