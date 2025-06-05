@@ -1,0 +1,101 @@
+basePath: /
+definitions:
+  model.AddPhotoRequest:
+    properties:
+      image_content:
+        description: Immagine in formato base64
+        type: string
+      image_name:
+        description: Nome dell'immagine
+        type: string
+    required:
+    - image_content
+    - image_name
+    type: object
+  model.AddPhotoResponse:
+    properties:
+      photo:
+        $ref: '#/definitions/model.Photo'
+        description: Nome della foto aggiunta
+    required:
+    - photo
+    type: object
+  model.ErrorResponse:
+    properties:
+      message:
+        description: Messaggio di errore
+        type: string
+    required:
+    - message
+    type: object
+  model.Photo:
+    properties:
+      image_name:
+        description: Nome dell'immagine
+        type: string
+      image_url:
+        description: URL dell'immagine
+        type: string
+    required:
+    - image_name
+    - image_url
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API per la gestione delle foto del matrimonio
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Wedding Photo Backend API
+  version: "1.0"
+paths:
+  /api/photos:
+    get:
+      description: Ottiene tutte le foto caricate sul server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Photo'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Recupera la lista delle foto
+      tags:
+      - photos
+    post:
+      consumes:
+      - application/json
+      description: Carica una nuova foto sul server
+      parameters:
+      - description: Dati della foto da caricare
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddPhotoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.AddPhotoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Upload di una foto
+      tags:
+      - photos
+swagger: "2.0"

@@ -1,0 +1,149 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API per la gestione delle foto del matrimonio",
+        "title": "Wedding Photo Backend API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/photos": {
+            "get": {
+                "description": "Ottiene tutte le foto caricate sul server",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "photos"
+                ],
+                "summary": "Recupera la lista delle foto",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Photo"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Carica una nuova foto sul server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "photos"
+                ],
+                "summary": "Upload di una foto",
+                "parameters": [
+                    {
+                        "description": "Dati della foto da caricare",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AddPhotoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.AddPhotoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.AddPhotoRequest": {
+            "type": "object",
+            "required": [
+                "image_content",
+                "image_name"
+            ],
+            "properties": {
+                "image_content": {
+                    "description": "Immagine in formato base64",
+                    "type": "string"
+                },
+                "image_name": {
+                    "description": "Nome dell'immagine",
+                    "type": "string"
+                }
+            }
+        },
+        "model.AddPhotoResponse": {
+            "type": "object",
+            "required": [
+                "photo"
+            ],
+            "properties": {
+                "photo": {
+                    "description": "Nome della foto aggiunta",
+                    "$ref": "#/definitions/model.Photo"
+                }
+            }
+        },
+        "model.ErrorResponse": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "description": "Messaggio di errore",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Photo": {
+            "type": "object",
+            "required": [
+                "image_name",
+                "image_url"
+            ],
+            "properties": {
+                "image_name": {
+                    "description": "Nome dell'immagine",
+                    "type": "string"
+                },
+                "image_url": {
+                    "description": "URL dell'immagine",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
