@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  wedding-photo-backend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - BASE_URL=http://localhost:8080
+      - PHOTOS_DIR=/root/media
+    volumes:
+      - ./media:/root/media
+    restart: unless-stopped

@@ -35,3 +35,12 @@ go.work.sum
 /media
 
 Dockerfile
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+media/*
+*.log
+.env
