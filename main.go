@@ -60,6 +60,9 @@ func main() {
 	// Route per Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Set route /media as static file server
+	r.Static("/media", photosDir)
+
 	// Avvia il server sulla porta 8080
 	log.Println("Server avviato su http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
