@@ -5,5 +5,6 @@ services:
     ports:
       - "8739:8739"
     volumes:
+      - ./:/app
       - ./media:/root/media
     restart: unless-stopped
