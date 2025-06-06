@@ -28,7 +28,7 @@ COPY --from=builder /app/main .
 RUN mkdir -p /root/media
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8739
 
 # Command to run
 CMD ["./main"]
