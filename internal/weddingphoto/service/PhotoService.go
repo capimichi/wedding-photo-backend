@@ -26,9 +26,9 @@ func NewPhotoService(photoManager *manager.PhotoManager, urlManager *manager.Url
 }
 
 // GetImageList restituisce la lista delle immagini salvate
-func (ps *PhotoService) GetImageList() ([]model.Photo, error) {
+func (ps *PhotoService) GetPhotoList() ([]model.Photo, error) {
 	// Recupera la lista delle immagini dal manager
-	imageNames, err := ps.photoManager.GetImageList()
+	imageNames, err := ps.photoManager.GetPhotoList()
 	if err != nil {
 		return nil, fmt.Errorf("errore nel recupero della lista delle immagini: %v", err)
 	}

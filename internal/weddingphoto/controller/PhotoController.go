@@ -66,7 +66,7 @@ func (pc *PhotoController) AddPhoto(c *gin.Context) {
 // @Failure 500 {object} model.ErrorResponse
 // @Router /api/photos [get]
 func (pc *PhotoController) GetPhotos(c *gin.Context) {
-	photos, err := pc.photoService.GetImageList()
+	photos, err := pc.photoService.GetPhotoList()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
 			Message: "Errore nel recupero delle foto: " + err.Error(),

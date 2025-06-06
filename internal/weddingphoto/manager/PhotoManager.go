@@ -27,7 +27,7 @@ func NewPhotoManager(photosDir string) *PhotoManager {
 	}
 }
 
-func (pm *PhotoManager) GetImageList() ([]string, error) {
+func (pm *PhotoManager) GetPhotoList() ([]string, error) {
 	var images []string
 
 	// Legge i file nella directory delle foto
