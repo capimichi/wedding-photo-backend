@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"wedding-photo-backend/docs"
 	"wedding-photo-backend/internal/weddingphoto/controller"
 	"wedding-photo-backend/internal/weddingphoto/manager"
@@ -58,7 +59,12 @@ func main() {
 	// print baseUrl
 	fmt.Println("Base URL:", baseUrl)
 
-	docs.SwaggerInfo.Host = baseUrl
+	// extract host from baseUrl
+	swaggerUrl := baseUrl
+	swaggerUrl = strings.Replace(swaggerUrl, "http://", "", 1)
+	swaggerUrl = strings.Replace(swaggerUrl, "https://", "", 1)
+
+	docs.SwaggerInfo.Host = swaggerUrl
 
 	photoManager := manager.NewPhotoManager(photosDir)
 	urlManager := manager.NewUrlManager(baseUrl)
