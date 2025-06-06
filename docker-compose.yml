@@ -5,11 +5,6 @@ services:
     build: .
     ports:
       - "8739:8739"
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8739
-      - BASE_URL=http://localhost:8739
-      - PHOTOS_DIR=/root/media
     volumes:
       - ./media:/root/media
     restart: unless-stopped
