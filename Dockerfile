@@ -10,6 +10,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Run swag init
+RUN go install github.com/swaggo/swag/cmd/swag@latest && swag init
+
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
