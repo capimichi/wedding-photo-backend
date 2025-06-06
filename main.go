@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"strings"
+	"net/url"
 	"wedding-photo-backend/docs"
 	"wedding-photo-backend/internal/weddingphoto/controller"
 	"wedding-photo-backend/internal/weddingphoto/manager"
@@ -56,15 +55,19 @@ func main() {
 	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8739")
 	photosDir := util.GetEnv("PHOTOS_DIR", "media")
 
-	// print baseUrl
-	fmt.Println("Base URL:", baseUrl)
+	// use net/url to parse the baseUrl and set the swagger Host, Scheme and BasePath
+	parsedUrl, err := url.Parse(baseUrl)
+	if err != nil {
+		log.Fatal("Error parsing BASE_URL:", err)
+	}
 
-	// extract host from baseUrl
-	swaggerUrl := baseUrl
-	swaggerUrl = strings.Replace(swaggerUrl, "http://", "", 1)
-	swaggerUrl = strings.Replace(swaggerUrl, "https://", "", 1)
-
-	docs.SwaggerInfo.Host = swaggerUrl
+	docs.SwaggerInfo.Host = parsedUrl.Host
+	docs.SwaggerInfo.Schemes = []string{parsedUrl.Scheme}
+	if parsedUrl.Path != "" && parsedUrl.Path != "/" {
+		docs.SwaggerInfo.BasePath = parsedUrl.Path
+	} else {
+		docs.SwaggerInfo.BasePath = "/"
+	}
 
 	photoManager := manager.NewPhotoManager(photosDir)
 	urlManager := manager.NewUrlManager(baseUrl)
