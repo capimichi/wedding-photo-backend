@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	_ "wedding-photo-backend/docs"
+	"wedding-photo-backend/docs"
 	"wedding-photo-backend/internal/weddingphoto/controller"
 	"wedding-photo-backend/internal/weddingphoto/manager"
 	"wedding-photo-backend/internal/weddingphoto/service"
@@ -53,6 +54,11 @@ func main() {
 	port := util.GetEnv("PORT", "8739")
 	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8739")
 	photosDir := util.GetEnv("PHOTOS_DIR", "media")
+
+	// print baseUrl
+	fmt.Println("Base URL:", baseUrl)
+
+	docs.SwaggerInfo.Host = baseUrl
 
 	photoManager := manager.NewPhotoManager(photosDir)
 	urlManager := manager.NewUrlManager(baseUrl)
