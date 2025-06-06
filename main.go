@@ -9,6 +9,7 @@ import (
 	"wedding-photo-backend/internal/weddingphoto/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
@@ -29,6 +30,9 @@ import (
 // @BasePath /
 
 func main() {
+
+	_ = godotenv.Load()
+
 	// Inizializza il router Gin
 	r := gin.Default()
 
@@ -47,8 +51,8 @@ func main() {
 	})
 
 	host := util.GetEnv("HOST", "0.0.0.0")
-	port := util.GetEnv("PORT", "8080")
-	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8080")
+	port := util.GetEnv("PORT", "8739")
+	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8739")
 	photosDir := util.GetEnv("PHOTOS_DIR", "media")
 
 	photoManager := manager.NewPhotoManager(photosDir)
@@ -66,7 +70,7 @@ func main() {
 	// Set route /media as static file server
 	r.Static("/media", photosDir)
 
-	// Avvia il server sulla porta 8080
+	// Avvia il server sulla porta
 	log.Println("Server avviato su http://" + host + ":" + port)
 	if err := r.Run(host + ":" + port); err != nil {
 		log.Fatal("Errore nell'avvio del server:", err)
