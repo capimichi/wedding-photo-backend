@@ -67,7 +67,7 @@ func main() {
 	r.Static("/media", photosDir)
 
 	// Avvia il server sulla porta 8080
-	log.Println("Server avviato su http://localhost:8080")
+	log.Println("Server avviato su http://" + host + ":" + port)
 	if err := r.Run(host + ":" + port); err != nil {
 		log.Fatal("Errore nell'avvio del server:", err)
 	}
