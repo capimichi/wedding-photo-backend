@@ -147,7 +147,7 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 		cropRect = image.Rect(offset, 0, offset+newWidth, srcHeight)
 	} else {
 		// Immagine più alta: crop verticalmente (prendi il centro)
-		newHeight := int(float64srcWidth) / dstAspect)
+		newHeight := int(float64(srcWidth) / dstAspect)
 		offset := (srcHeight - newHeight) / 2
 		cropRect = image.Rect(0, offset, srcWidth, offset+newHeight)
 	}
