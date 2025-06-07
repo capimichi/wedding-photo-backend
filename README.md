@@ -2,7 +2,7 @@
 
 Backend per il progetto di gestione foto matrimonio, sviluppato in Go con framework Gin.
 
-## Funzionalità
+## Funzionalita
 
 - Upload di foto tramite REST API
 - Recupero della lista delle foto caricate
