@@ -62,7 +62,7 @@ func (pc *PhotoController) AddPhoto(c *gin.Context) {
 // @Description Ottiene tutte le foto caricate sul server
 // @Tags photos
 // @Produce json
-// @Success 200 {array} model.Photo
+// @Success 200 {object} model.GetPhotosResponse
 // @Failure 500 {object} model.ErrorResponse
 // @Router /api/photos [get]
 func (pc *PhotoController) GetPhotos(c *gin.Context) {
