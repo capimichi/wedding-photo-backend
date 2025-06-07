@@ -64,7 +64,7 @@ func (pc *PhotoController) AddPhoto(c *gin.Context) {
 // @Tags photos
 // @Produce json
 // @Param page query int false "Numero pagina (default: 1)"
-// @Param perPage query int false "Elementi per pagina (default: 10, max: 100)"
+// @Param per_page query int false "Elementi per pagina (default: 10, max: 100)"
 // @Success 200 {object} model.GetPhotosResponse
 // @Failure 400 {object} model.ErrorResponse
 // @Failure 500 {object} model.ErrorResponse
@@ -80,7 +80,7 @@ func (pc *PhotoController) GetPhotos(c *gin.Context) {
 		}
 	}
 
-	if perPageParam := c.Query("perPage"); perPageParam != "" {
+	if perPageParam := c.Query("per_page"); perPageParam != "" {
 		if pp, err := strconv.Atoi(perPageParam); err == nil && pp > 0 && pp <= 100 {
 			perPage = pp
 		}
