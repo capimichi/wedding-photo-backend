@@ -41,6 +41,7 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 			ImageName:    imageName,
 			ImageUrl:     ps.urlManager.GetImageUrl(imageName),
 			ThumbnailUrl: ps.urlManager.GetThumbnailUrl(imageName),
+			PreviewUrl:   ps.urlManager.GetPreviewUrl(imageName),
 		})
 	}
 
@@ -100,6 +101,7 @@ func (ps *PhotoService) AddPhoto(imageContent string, imageName string) (*model.
 		ImageName:    fileName,
 		ImageUrl:     ps.urlManager.GetImageUrl(fileName),
 		ThumbnailUrl: ps.urlManager.GetThumbnailUrl(fileName),
+		PreviewUrl:   ps.urlManager.GetPreviewUrl(fileName),
 	}
 
 	return photo, nil

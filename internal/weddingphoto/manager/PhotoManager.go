@@ -16,11 +16,13 @@ import (
 type PhotoManager struct {
 	photosDir     string
 	thumbnailsDir string
+	previewsDir   string
 }
 
 // NewPhotoManager crea una nuova istanza del manager
 func NewPhotoManager(photosDir string) *PhotoManager {
 	thumbnailsDir := filepath.Join(photosDir, "thumbnails")
+	previewsDir := filepath.Join(photosDir, "previews")
 
 	// Crea le directory se non esistono
 	if err := os.MkdirAll(photosDir, 0755); err != nil {
@@ -29,10 +31,14 @@ func NewPhotoManager(photosDir string) *PhotoManager {
 	if err := os.MkdirAll(thumbnailsDir, 0755); err != nil {
 		fmt.Printf("Errore nella creazione della directory thumbnails %s: %v\n", thumbnailsDir, err)
 	}
+	if err := os.MkdirAll(previewsDir, 0755); err != nil {
+		fmt.Printf("Errore nella creazione della directory previews %s: %v\n", previewsDir, err)
+	}
 
 	return &PhotoManager{
 		photosDir:     photosDir,
 		thumbnailsDir: thumbnailsDir,
+		previewsDir:   previewsDir,
 	}
 }
 
@@ -91,6 +97,12 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 		// Non restituiamo errore per il thumbnail, continuiamo
 	}
 
+	// Crea la preview
+	if err := pm.createPreview(filePath, filename, contentType); err != nil {
+		fmt.Printf("Errore nella creazione della preview per %s: %v\n", filename, err)
+		// Non restituiamo errore per la preview, continuiamo
+	}
+
 	return filename, nil
 }
 
@@ -111,6 +123,28 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 	err = imaging.Save(thumbnail, thumbnailPath, imaging.JPEGQuality(85))
 	if err != nil {
 		return fmt.Errorf("errore nel salvataggio del thumbnail: %v", err)
+	}
+
+	return nil
+}
+
+// createPreview crea una preview con dimensioni massime 1024x1024 mantenendo le proporzioni
+func (pm *PhotoManager) createPreview(originalPath, filename, contentType string) error {
+	previewPath := filepath.Join(pm.previewsDir, filename)
+
+	// Apre l'immagine originale
+	src, err := imaging.Open(originalPath, imaging.AutoOrientation(true))
+	if err != nil {
+		return fmt.Errorf("errore nell'apertura dell'immagine: %v", err)
+	}
+
+	// Ridimensiona mantenendo le proporzioni con dimensioni massime 1024x1024
+	preview := imaging.Fit(src, 1024, 1024, imaging.Lanczos)
+
+	// Salva la preview con qualità JPEG 85
+	err = imaging.Save(preview, previewPath, imaging.JPEGQuality(85))
+	if err != nil {
+		return fmt.Errorf("errore nel salvataggio della preview: %v", err)
 	}
 
 	return nil

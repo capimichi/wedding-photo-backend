@@ -29,3 +29,8 @@ func (um *UrlManager) GetImageUrl(imageName string) string {
 func (um *UrlManager) GetThumbnailUrl(imageName string) string {
 	return fmt.Sprintf("%s/media/thumbnails/%s", um.baseUrl, imageName)
 }
+
+// GetPreviewUrl restituisce l'URL completo per un'anteprima dato il nome del file
+func (um *UrlManager) GetPreviewUrl(imageName string) string {
+	return fmt.Sprintf("%s/media/previews/%s", um.baseUrl, imageName)
+}
