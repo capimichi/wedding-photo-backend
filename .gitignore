@@ -35,3 +35,4 @@ go.work.sum
 /media
 
 docker-compose.override.yml
+deploy.sh
