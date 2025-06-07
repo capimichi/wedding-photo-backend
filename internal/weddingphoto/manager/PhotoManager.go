@@ -2,10 +2,6 @@ package manager
 
 import (
 	"fmt"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"math/rand"
 	"os"
@@ -13,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/image/draw"
-	"golang.org/x/image/webp"
+	"github.com/disintegration/imaging"
 )
 
 // PhotoManager gestisce le operazioni sulfilesystem per le foto
@@ -99,72 +94,25 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 	return filename, nil
 }
 
-// createThumbnail crea un thumbnail di 200x200px
+// createThumbnail crea un thumbnail di 400x400px
 func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
-	// Apre l'immagine originale
-	file, err := os.Open(originalPath)
+	// Apre l'immagine originale con correzione automatica dell'orientamento EXIF
+	img, err := imaging.Open(originalPath)
 	if err != nil {
-		return fmt.Errorf("errore nell'apertura del file originale: %v", err)
-	}
-	defer file.Close()
-
-	// Decodifica l'immagine in base al tipo
-	var img image.Image
-	switch contentType {
-	case "image/jpeg":
-		img, err = jpeg.Decode(file)
-	case "image/png":
-		img, err = png.Decode(file)
-	case "image/gif":
-		img, err = gif.Decode(file)
-	case "image/webp":
-		img, err = webp.Decode(file)
-	default:
-		img, _, err = image.Decode(file)
+		return fmt.Errorf("errore nell'apertura e decodifica dell'immagine: %v", err)
 	}
 
-	if err != nil {
-		return fmt.Errorf("errore nella decodifica dell'immagine: %v", err)
-	}
-
-	// Crea un'immagine thumbnail di 400x400
-	thumbnail := image.NewRGBA(image.Rect(0, 0, 400, 400))
-
-	// Calcola il rettangolo di crop per mantenere le proporzioni
-	srcBounds := img.Bounds()
-	srcWidth := srcBounds.Dx()
-	srcHeight := srcBounds.Dy()
-
-	// Calcola il rapporto di aspetto
-	srcAspect := float64(srcWidth) / float64(srcHeight)
-	dstAspect := 1.0 // 400x400 è quadrato
-
-	var cropRect image.Rectangle
-	if srcAspect > dstAspect {
-		// Immagine più larga: crop orizzontalmente (prendi il centro)
-		newWidth := int(float64(srcHeight) * dstAspect)
-		offset := (srcWidth - newWidth) / 2
-		cropRect = image.Rect(offset, 0, offset+newWidth, srcHeight)
-	} else {
-		// Immagine più alta: crop verticalmente (prendi il centro)
-		newHeight := int(float64(srcWidth) / dstAspect)
-		offset := (srcHeight - newHeight) / 2
-		cropRect = image.Rect(0, offset, srcWidth, offset+newHeight)
-	}
-
-	// Ridimensiona dalla porzione croppata mantenendo l'orientamento originale
-	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, cropRect, draw.Over, nil)
+	// Crea un thumbnail quadrato di 400x400 con crop automatico centrato
+	thumbnail := imaging.Fill(img, 400, 400, imaging.Center, imaging.Lanczos)
 
 	// Salva il thumbnail
 	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
-	thumbnailFile, err := os.Create(thumbnailPath)
+	err = imaging.Save(thumbnail, thumbnailPath, imaging.JPEGQuality(85))
 	if err != nil {
-		return fmt.Errorf("errore nella creazione del file thumbnail: %v", err)
+		return fmt.Errorf("errore nel salvataggio del thumbnail: %v", err)
 	}
-	defer thumbnailFile.Close()
 
-	// Salva sempre come JPEG per i thumbnail
-	return jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 85})
+	return nil
 }
 
 // DeletePhoto elimina una immagine dal filesystem
