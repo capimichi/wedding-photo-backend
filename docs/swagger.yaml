@@ -28,6 +28,16 @@ definitions:
     required:
     - message
     type: object
+  model.GetPhotosResponse:
+    properties:
+      photos:
+        description: Nome della foto aggiunta
+        items:
+          $ref: '#/definitions/model.Photo'
+        type: array
+    required:
+    - photos
+    type: object
   model.Photo:
     properties:
       image_name:
@@ -62,9 +72,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.Photo'
-            type: array
+            $ref: '#/definitions/model.GetPhotosResponse'
         "500":
           description: Internal Server Error
           schema:

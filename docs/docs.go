@@ -46,10 +46,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Photo"
-                            }
+                            "$ref": "#/definitions/model.GetPhotosResponse"
                         }
                     },
                     "500": {
@@ -139,6 +136,21 @@ var doc = `{
                 "message": {
                     "description": "Messaggio di errore",
                     "type": "string"
+                }
+            }
+        },
+        "model.GetPhotosResponse": {
+            "type": "object",
+            "required": [
+                "photos"
+            ],
+            "properties": {
+                "photos": {
+                    "description": "Nome della foto aggiunta",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Photo"
+                    }
                 }
             }
         },
