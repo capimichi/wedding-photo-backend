@@ -101,72 +101,71 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 
 // createThumbnail crea un thumbnail di 200x200px
 func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
-    // Apre l'immagine originale
-    file, err := os.Open(originalPath)
-    if err != nil {
-        return fmt.Errorf("errore nell'apertura del file originale: %v", err)
-    }
-    defer file.Close()
+	// Apre l'immagine originale
+	file, err := os.Open(originalPath)
+	if err != nil {
+		return fmt.Errorf("errore nell'apertura del file originale: %v", err)
+	}
+	defer file.Close()
 
-    // Decodifica l'immagine in base al tipo
-    var img image.Image
-    switch contentType {
-    case "image/jpeg":
-        img, err = jpeg.Decode(file)
-    case "image/png":
-        img, err = png.Decode(file)
-    case "image/gif":
-        img, err = gif.Decode(file)
-    case "image/webp":
-        img, err = webp.Decode(file)
-    default:
-        img, _, err = image.Decode(file)
-    }
+	// Decodifica l'immagine in base al tipo
+	var img image.Image
+	switch contentType {
+	case "image/jpeg":
+		img, err = jpeg.Decode(file)
+	case "image/png":
+		img, err = png.Decode(file)
+	case "image/gif":
+		img, err = gif.Decode(file)
+	case "image/webp":
+		img, err = webp.Decode(file)
+	default:
+		img, _, err = image.Decode(file)
+	}
 
-    if err != nil {
-        return fmt.Errorf("errore nella decodifica dell'immagine: %v", err)
-    }
+	if err != nil {
+		return fmt.Errorf("errore nella decodifica dell'immagine: %v", err)
+	}
 
-    // Crea un'immagine thumbnail di 200x200
-    thumbnail := image.NewRGBA(image.Rect(0, 0, 200, 200))
+	// Crea un'immagine thumbnail di 200x200
+	thumbnail := image.NewRGBA(image.Rect(0, 0, 200, 200))
 
-    // Calcola il rettangolo di crop per mantenere le proporzioni
-    srcBounds := img.Bounds()
-    srcWidth := srcBounds.Dx()
-    srcHeight := srcBounds.Dy()
+	// Calcola il rettangolo di crop per mantenere le proporzioni
+	srcBounds := img.Bounds()
+	srcWidth := srcBounds.Dx()
+	srcHeight := srcBounds.Dy()
 
-    // Calcola il rapporto di aspetto
-    srcAspect := float64(srcWidth) / float64(srcHeight)
-    dstAspect := 1.0 // 200x200 è quadrato
+	// Calcola il rapporto di aspetto
+	srcAspect := float64(srcWidth) / float64(srcHeight)
+	dstAspect := 1.0 // 200x200 è quadrato
 
-    var cropRect image.Rectangle
-    if srcAspect > dstAspect {
-        // Immagine più larga: crop orizzontalmente
-        newWidth := int(float64(srcHeight) * dstAspect)
-        offset := (srcWidth - newWidth) / 2
-        cropRect = image.Rect(srcBounds.Min.X+offset, srcBounds.Min.Y, srcBounds.Min.X+offset+newWidth, srcBounds.Max.Y)
-    } else {
-        // Immagine più alta: crop verticalmente
-        newHeight := int(float64(srcWidth) / dstAspect)
-        offset := (srcHeight - newHeight) / 2
-        cropRect = image.Rect(srcBounds.Min.X, srcBounds.Min.Y+offset, srcBounds.Max.X, srcBounds.Min.Y+offset+newHeight)
-    }
+	var cropRect image.Rectangle
+	if srcAspect > dstAspect {
+		// Immagine più larga: crop orizzontalmente
+		newWidth := int(float64(srcHeight) * dstAspect)
+		offset := (srcWidth - newWidth) / 2
+		cropRect = image.Rect(srcBounds.Min.X+offset, srcBounds.Min.Y, srcBounds.Min.X+offset+newWidth, srcBounds.Max.Y)
+	} else {
+		// Immagine più alta: crop verticalmente
+		newHeight := int(float64(srcWidth) / dstAspect)
+		offset := (srcHeight - newHeight) / 2
+		cropRect = image.Rect(srcBounds.Min.X, srcBounds.Min.Y+offset, srcBounds.Max.X, srcBounds.Min.Y+offset+newHeight)
+	}
 
-    // Usa BiLinear per una qualità migliore nei thumbnail
-    draw.BiLinear.Scale(thumbnail, thumbnail.Bounds(), img, cropRect, draw.Over, nil)
+	// Ridimensiona dalla porzione croppata
+	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, cropRect, draw.Over, nil)
 
-    // Salva il thumbnail
-    thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
-    thumbnailFile, err := os.Create(thumbnailPath)
-    if err != nil {
-        return fmt.Errorf("errore nella creazione del file thumbnail: %v", err)
-    }
-    defer thumbnailFile.Close()
+	// Salva il thumbnail
+	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
+	thumbnailFile, err := os.Create(thumbnailPath)
+	if err != nil {
+		return fmt.Errorf("errore nella creazione del file thumbnail: %v", err)
+	}
+	defer thumbnailFile.Close()
 
-    // Aumenta la qualità JPEG per i thumbnail
-    return jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 95})
+	// Salva sempre come JPEG per i thumbnail
+	return jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 85})
 }
-
 
 // DeletePhoto elimina una immagine dal filesystem
 func (pm *PhotoManager) DeletePhoto(filename string) error {
