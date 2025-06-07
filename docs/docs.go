@@ -52,7 +52,7 @@ var doc = `{
                     {
                         "type": "integer",
                         "description": "Elementi per pagina (default: 10, max: 100)",
-                        "name": "perPage",
+                        "name": "per_page",
                         "in": "query"
                     }
                 ],
