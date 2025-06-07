@@ -2,16 +2,13 @@ package manager
 
 import (
 	"fmt"
-	"image"
 	"io"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/disintegration/imaging"
-	"github.com/rwcarlsen/goexif/exif"
 )
 
 // PhotoManager gestisce le operazioni sulfilesystem per le foto
@@ -96,89 +93,24 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 	return filename, nil
 }
 
-// createThumbnail crea un thumbnail di 400x400px
+// createThumbnail crea un thumbnail di 400x400px usando ImageMagick
 func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
-	// Apre l'immagine originale
-	img, err := imaging.Open(originalPath)
-	if err != nil {
-		return fmt.Errorf("errore nell'apertura e decodifica dell'immagine: %v", err)
-	}
-
-	// Applica la correzione dell'orientamento EXIF
-	img, err = pm.fixOrientation(img, originalPath)
-	if err != nil {
-		fmt.Printf("Avviso: impossibile leggere/applicare orientamento EXIF per %s: %v\n", filename, err)
-		// Continua comunque con l'immagine originale
-	}
-
-	// Crea un thumbnail quadrato di 400x400 con crop automatico centrato
-	thumbnail := imaging.Fill(img, 400, 400, imaging.Center, imaging.Lanczos)
-
-	// Salva il thumbnail
 	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
-	err = imaging.Save(thumbnail, thumbnailPath, imaging.JPEGQuality(85))
-	if err != nil {
-		return fmt.Errorf("errore nel salvataggio del thumbnail: %v", err)
+
+	cmd := exec.Command("magick", originalPath,
+		"-auto-orient",
+		"-resize", "400x400^",
+		"-gravity", "center",
+		"-crop", "400x400+0+0",
+		"-quality", "85",
+		"-strip",
+		thumbnailPath)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("errore nell'esecuzione di ImageMagick: %v", err)
 	}
 
 	return nil
-}
-
-// fixOrientation legge i dati EXIF e applica la rotazione corretta
-func (pm *PhotoManager) fixOrientation(img image.Image, imagePath string) (image.Image, error) {
-	// Apre il file per leggere i dati EXIF
-	file, err := os.Open(imagePath)
-	if err != nil {
-		return img, err
-	}
-	defer file.Close()
-
-	// Decodifica i dati EXIF
-	x, err := exif.Decode(file)
-	if err != nil {
-		return img, err // Nessun EXIF o errore nella lettura
-	}
-
-	// Legge il tag di orientamento
-	orientTag, err := x.Get(exif.Orientation)
-	if err != nil {
-		return img, err // Nessun tag di orientamento
-	}
-
-	orient, err := orientTag.Int(0)
-	if err != nil {
-		return img, err
-	}
-
-	// Applica la rotazione basata sul valore EXIF
-	switch orient {
-	case 1:
-		// Normale, nessuna rotazione
-		return img, nil
-	case 2:
-		// Flipped orizzontalmente
-		return imaging.FlipH(img), nil
-	case 3:
-		// Ruotato di 180°
-		return imaging.Rotate180(img), nil
-	case 4:
-		// Flipped verticalmente
-		return imaging.FlipV(img), nil
-	case 5:
-		// Ruotato di 90° in senso antiorario e flipped orizzontalmente
-		return imaging.FlipH(imaging.Rotate270(img)), nil
-	case 6:
-		// Ruotato di 90° in senso orario
-		return imaging.Rotate90(img), nil
-	case 7:
-		// Ruotato di 90° in senso orario e flipped orizzontalmente
-		return imaging.FlipH(imaging.Rotate90(img)), nil
-	case 8:
-		// Ruotato di 90° in senso antiorario
-		return imaging.Rotate270(img), nil
-	default:
-		return img, nil
-	}
 }
 
 // DeletePhoto elimina una immagine dal filesystem

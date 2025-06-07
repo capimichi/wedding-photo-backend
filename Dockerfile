@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates imagemagick
 
 WORKDIR /root/
 
@@ -26,9 +26,6 @@ COPY --from=builder /app/main .
 
 # Create media directory for photos
 RUN mkdir -p /root/media
-
-# Expose port
-EXPOSE 8739
 
 # Command to run
 CMD ["./main"]
