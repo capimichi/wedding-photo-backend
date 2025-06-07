@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"strings"
 
 	"wedding-photo-backend/internal/weddingphoto/manager"
@@ -25,12 +27,12 @@ func NewPhotoService(photoManager *manager.PhotoManager, urlManager *manager.Url
 	}
 }
 
-// GetImageList restituisce la lista delle immagini salvate
-func (ps *PhotoService) GetPhotoList() ([]model.Photo, error) {
+// GetPhotoList restituisce la lista delle immagini salvate con paginazione
+func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, error) {
 	// Recupera la lista delle immagini dal manager
 	imageNames, err := ps.photoManager.GetPhotoList()
 	if err != nil {
-		return nil, fmt.Errorf("errore nel recupero della lista delle immagini: %v", err)
+		return nil, 0, fmt.Errorf("errore nel recupero della lista delle immagini: %v", err)
 	}
 
 	var photos []model.Photo
@@ -41,7 +43,32 @@ func (ps *PhotoService) GetPhotoList() ([]model.Photo, error) {
 		})
 	}
 
-	return photos, nil
+	// Ordina le foto per nome file in ordine decrescente (assumendo che i nomi file contengano timestamp)
+	sort.Slice(photos, func(i, j int) bool {
+		return photos[i].ImageName > photos[j].ImageName
+	})
+
+	// Calcola il numero totale di pagine
+	totalPhotos := len(photos)
+	totalPages := int(math.Ceil(float64(totalPhotos) / float64(perPage)))
+
+	// Calcola gli indici per la paginazione
+	startIndex := (page - 1) * perPage
+	endIndex := startIndex + perPage
+
+	// Verifica i limiti
+	if startIndex >= totalPhotos {
+		return []model.Photo{}, totalPages, nil
+	}
+
+	if endIndex > totalPhotos {
+		endIndex = totalPhotos
+	}
+
+	// Ritorna la finestra di foto richiesta
+	paginatedPhotos := photos[startIndex:endIndex]
+
+	return paginatedPhotos, totalPages, nil
 }
 
 // AddPhoto salva una foto da AddPhotoRequest e aggiorna la lista

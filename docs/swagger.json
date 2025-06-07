@@ -19,7 +19,7 @@
     "paths": {
         "/api/photos": {
             "get": {
-                "description": "Ottiene tutte le foto caricate sul server",
+                "description": "Ottiene tutte le foto caricate sul server con paginazione",
                 "produces": [
                     "application/json"
                 ],
@@ -27,11 +27,31 @@
                     "photos"
                 ],
                 "summary": "Recupera la lista delle foto",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Numero pagina (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Elementi per pagina (default: 10, max: 100)",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.GetPhotosResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
                         }
                     },
                     "500": {
@@ -127,15 +147,25 @@
         "model.GetPhotosResponse": {
             "type": "object",
             "required": [
-                "photos"
+                "page",
+                "photos",
+                "total_pages"
             ],
             "properties": {
+                "page": {
+                    "description": "Pagina corrente",
+                    "type": "integer"
+                },
                 "photos": {
-                    "description": "Nome della foto aggiunta",
+                    "description": "Lista delle foto",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Photo"
                     }
+                },
+                "total_pages": {
+                    "description": "Numero totale di pagine",
+                    "type": "integer"
                 }
             }
         },

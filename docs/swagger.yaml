@@ -30,13 +30,21 @@ definitions:
     type: object
   model.GetPhotosResponse:
     properties:
+      page:
+        description: Pagina corrente
+        type: integer
       photos:
-        description: Nome della foto aggiunta
+        description: Lista delle foto
         items:
           $ref: '#/definitions/model.Photo'
         type: array
+      total_pages:
+        description: Numero totale di pagine
+        type: integer
     required:
+    - page
     - photos
+    - total_pages
     type: object
   model.Photo:
     properties:
@@ -65,7 +73,16 @@ info:
 paths:
   /api/photos:
     get:
-      description: Ottiene tutte le foto caricate sul server
+      description: Ottiene tutte le foto caricate sul server con paginazione
+      parameters:
+      - description: 'Numero pagina (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Elementi per pagina (default: 10, max: 100)'
+        in: query
+        name: per_page
+        type: integer
       produces:
       - application/json
       responses:
@@ -73,6 +90,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.GetPhotosResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
