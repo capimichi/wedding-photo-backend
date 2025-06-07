@@ -8,6 +8,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
+	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/swaggo/gin-swagger v1.4.0
 	github.com/swaggo/swag v1.7.8
 )
