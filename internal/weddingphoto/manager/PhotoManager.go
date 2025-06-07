@@ -128,7 +128,7 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 	}
 
 	// Crea un'immagine thumbnail di 200x200
-	thumbnail := image.NewRGBA(image.Rect(0, 0, 200, 200))
+	thumbnail := image.NewRGBA(image.Rect(0, 0, 400, 400))
 
 	// Calcola il rettangolo di crop per mantenere le proporzioni
 	srcBounds := img.Bounds()
