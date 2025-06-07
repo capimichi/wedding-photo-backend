@@ -130,8 +130,30 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 	// Crea un'immagine thumbnail di 200x200
 	thumbnail := image.NewRGBA(image.Rect(0, 0, 200, 200))
 
-	// Ridimensiona mantenendo le proporzioni e centrando
-	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, img.Bounds(), draw.Over, nil)
+	// Calcola il rettangolo di crop per mantenere le proporzioni
+	srcBounds := img.Bounds()
+	srcWidth := srcBounds.Dx()
+	srcHeight := srcBounds.Dy()
+
+	// Calcola il rapporto di aspetto
+	srcAspect := float64(srcWidth) / float64(srcHeight)
+	dstAspect := 1.0 // 200x200 è quadrato
+
+	var cropRect image.Rectangle
+	if srcAspect > dstAspect {
+		// Immagine più larga: crop orizzontalmente
+		newWidth := int(float64(srcHeight) * dstAspect)
+		offset := (srcWidth - newWidth) / 2
+		cropRect = image.Rect(srcBounds.Min.X+offset, srcBounds.Min.Y, srcBounds.Min.X+offset+newWidth, srcBounds.Max.Y)
+	} else {
+		// Immagine più alta: crop verticalmente
+		newHeight := int(float64(srcWidth) / dstAspect)
+		offset := (srcHeight - newHeight) / 2
+		cropRect = image.Rect(srcBounds.Min.X, srcBounds.Min.Y+offset, srcBounds.Max.X, srcBounds.Min.Y+offset+newHeight)
+	}
+
+	// Ridimensiona dalla porzione croppata
+	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, cropRect, draw.Over, nil)
 
 	// Salva il thumbnail
 	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
