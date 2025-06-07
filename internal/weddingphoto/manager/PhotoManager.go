@@ -2,28 +2,42 @@ package manager
 
 import (
 	"fmt"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/image/draw"
+	"golang.org/x/image/webp"
 )
 
 // PhotoManager gestisce le operazioni sul filesystem per le foto
 type PhotoManager struct {
-	photosDir string
+	photosDir     string
+	thumbnailsDir string
 }
 
 // NewPhotoManager crea una nuova istanza del manager
 func NewPhotoManager(photosDir string) *PhotoManager {
-	// Crea la directory se non esiste
+	thumbnailsDir := filepath.Join(photosDir, "thumbnails")
+
+	// Crea le directory se non esistono
 	if err := os.MkdirAll(photosDir, 0755); err != nil {
 		fmt.Printf("Errore nella creazione della directory %s: %v\n", photosDir, err)
 	}
+	if err := os.MkdirAll(thumbnailsDir, 0755); err != nil {
+		fmt.Printf("Errore nella creazione della directory thumbnails %s: %v\n", thumbnailsDir, err)
+	}
 
 	return &PhotoManager{
-		photosDir: photosDir,
+		photosDir:     photosDir,
+		thumbnailsDir: thumbnailsDir,
 	}
 }
 
@@ -76,7 +90,59 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 		return "", fmt.Errorf("errore nella scrittura del file: %v", err)
 	}
 
+	// Crea il thumbnail
+	if err := pm.createThumbnail(filePath, filename, contentType); err != nil {
+		fmt.Printf("Errore nella creazione del thumbnail per %s: %v\n", filename, err)
+		// Non restituiamo errore per il thumbnail, continuiamo
+	}
+
 	return filename, nil
+}
+
+// createThumbnail crea un thumbnail di 200x200px
+func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
+	// Apre l'immagine originale
+	file, err := os.Open(originalPath)
+	if err != nil {
+		return fmt.Errorf("errore nell'apertura del file originale: %v", err)
+	}
+	defer file.Close()
+
+	// Decodifica l'immagine in base al tipo
+	var img image.Image
+	switch contentType {
+	case "image/jpeg":
+		img, err = jpeg.Decode(file)
+	case "image/png":
+		img, err = png.Decode(file)
+	case "image/gif":
+		img, err = gif.Decode(file)
+	case "image/webp":
+		img, err = webp.Decode(file)
+	default:
+		img, _, err = image.Decode(file)
+	}
+
+	if err != nil {
+		return fmt.Errorf("errore nella decodifica dell'immagine: %v", err)
+	}
+
+	// Crea un'immagine thumbnail di 200x200
+	thumbnail := image.NewRGBA(image.Rect(0, 0, 200, 200))
+
+	// Ridimensiona mantenendo le proporzioni e centrando
+	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, img.Bounds(), draw.Over, nil)
+
+	// Salva il thumbnail
+	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
+	thumbnailFile, err := os.Create(thumbnailPath)
+	if err != nil {
+		return fmt.Errorf("errore nella creazione del file thumbnail: %v", err)
+	}
+	defer thumbnailFile.Close()
+
+	// Salva sempre come JPEG per i thumbnail
+	return jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 85})
 }
 
 // DeletePhoto elimina una immagine dal filesystem

@@ -188,7 +188,8 @@ var doc = `{
             "type": "object",
             "required": [
                 "image_name",
-                "image_url"
+                "image_url",
+                "thumbnail_url"
             ],
             "properties": {
                 "image_name": {
@@ -197,6 +198,10 @@ var doc = `{
                 },
                 "image_url": {
                     "description": "URL dell'immagine",
+                    "type": "string"
+                },
+                "thumbnail_url": {
+                    "description": "URL del thumbnail",
                     "type": "string"
                 }
             }
