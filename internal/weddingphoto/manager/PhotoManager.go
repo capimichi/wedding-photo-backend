@@ -5,10 +5,11 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
 // PhotoManager gestisce le operazioni sulfilesystem per le foto
@@ -20,6 +21,9 @@ type PhotoManager struct {
 // NewPhotoManager crea una nuova istanza del manager
 func NewPhotoManager(photosDir string) *PhotoManager {
 	thumbnailsDir := filepath.Join(photosDir, "thumbnails")
+
+	// Inizializza ImageMagick
+	imagick.Initialize()
 
 	// Crea le directory se non esistono
 	if err := os.MkdirAll(photosDir, 0755); err != nil {
@@ -33,6 +37,11 @@ func NewPhotoManager(photosDir string) *PhotoManager {
 		photosDir:     photosDir,
 		thumbnailsDir: thumbnailsDir,
 	}
+}
+
+// Cleanup pulisce le risorse di ImageMagick
+func (pm *PhotoManager) Cleanup() {
+	imagick.Terminate()
 }
 
 func (pm *PhotoManager) GetPhotoList() ([]string, error) {
@@ -93,21 +102,48 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 	return filename, nil
 }
 
-// createThumbnail crea un thumbnail di 400x400px usando ImageMagick
+// createThumbnail crea un thumbnail di 400x400px usando ImageMagick library
 func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
 	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
 
-	cmd := exec.Command("magick", originalPath,
-		"-auto-orient",
-		"-resize", "400x400^",
-		"-gravity", "center",
-		"-crop", "400x400+0+0",
-		"-quality", "85",
-		"-strip",
-		thumbnailPath)
+	// Crea un nuovo MagickWand
+	mw := imagick.NewMagickWand()
+	defer mw.Destroy()
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("errore nell'esecuzione di ImageMagick: %v", err)
+	// Legge l'immagine originale
+	err := mw.ReadImage(originalPath)
+	if err != nil {
+		return fmt.Errorf("errore nella lettura dell'immagine: %v", err)
+	}
+
+	// Auto-orienta l'immagine
+	err = mw.AutoOrientImage()
+	if err != nil {
+		return fmt.Errorf("errore nell'auto-orientamento: %v", err)
+	}
+
+	// Ridimensiona l'immagine a 400x400 mantenendo le proporzioni e riempiendo
+	err = mw.ResizeImage(400, 400, imagick.FILTER_LANCZOS)
+	if err != nil {
+		return fmt.Errorf("errore nel ridimensionamento: %v", err)
+	}
+
+	// Imposta la qualità
+	err = mw.SetImageCompressionQuality(85)
+	if err != nil {
+		return fmt.Errorf("errore nell'impostazione della qualità: %v", err)
+	}
+
+	// Rimuove i metadati EXIF
+	err = mw.StripImage()
+	if err != nil {
+		return fmt.Errorf("errore nella rimozione dei metadati: %v", err)
+	}
+
+	// Salva il thumbnail
+	err = mw.WriteImage(thumbnailPath)
+	if err != nil {
+		return fmt.Errorf("errore nella scrittura del thumbnail: %v", err)
 	}
 
 	return nil
