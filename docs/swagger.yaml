@@ -54,9 +54,13 @@ definitions:
       image_url:
         description: URL dell'immagine
         type: string
+      thumbnail_url:
+        description: URL del thumbnail
+        type: string
     required:
     - image_name
     - image_url
+    - thumbnail_url
     type: object
 info:
   contact:

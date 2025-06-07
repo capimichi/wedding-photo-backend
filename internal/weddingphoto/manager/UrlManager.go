@@ -24,3 +24,8 @@ func NewUrlManager(baseUrl string) *UrlManager {
 func (um *UrlManager) GetImageUrl(imageName string) string {
 	return fmt.Sprintf("%s/media/%s", um.baseUrl, imageName)
 }
+
+// GetThumbnailUrl restituisce l'URL completo per un thumbnail dato il nome del file
+func (um *UrlManager) GetThumbnailUrl(imageName string) string {
+	return fmt.Sprintf("%s/media/thumbnails/%s", um.baseUrl, imageName)
+}

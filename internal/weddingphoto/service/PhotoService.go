@@ -38,8 +38,9 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 	var photos []model.Photo
 	for _, imageName := range imageNames {
 		photos = append(photos, model.Photo{
-			ImageName: imageName,
-			ImageUrl:  ps.urlManager.GetImageUrl(imageName),
+			ImageName:    imageName,
+			ImageUrl:     ps.urlManager.GetImageUrl(imageName),
+			ThumbnailUrl: ps.urlManager.GetThumbnailUrl(imageName),
 		})
 	}
 
@@ -96,8 +97,9 @@ func (ps *PhotoService) AddPhoto(imageContent string, imageName string) (*model.
 
 	// Crea e restituisce l'oggetto Photo con URL completo
 	photo := &model.Photo{
-		ImageName: fileName,
-		ImageUrl:  ps.urlManager.GetImageUrl(fileName),
+		ImageName:    fileName,
+		ImageUrl:     ps.urlManager.GetImageUrl(fileName),
+		ThumbnailUrl: ps.urlManager.GetThumbnailUrl(fileName),
 	}
 
 	return photo, nil
