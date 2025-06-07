@@ -17,7 +17,7 @@ import (
 	"golang.org/x/image/webp"
 )
 
-// PhotoManager gestisce le operazioni sul filesystem per le foto
+// PhotoManager gestisce le operazioni sulfilesystem per le foto
 type PhotoManager struct {
 	photosDir     string
 	thumbnailsDir string
@@ -127,7 +127,7 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 		return fmt.Errorf("errore nella decodifica dell'immagine: %v", err)
 	}
 
-	// Crea un'immagine thumbnail di 200x200
+	// Crea un'immagine thumbnail di 400x400
 	thumbnail := image.NewRGBA(image.Rect(0, 0, 400, 400))
 
 	// Calcola il rettangolo di crop per mantenere le proporzioni
@@ -137,22 +137,22 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 
 	// Calcola il rapporto di aspetto
 	srcAspect := float64(srcWidth) / float64(srcHeight)
-	dstAspect := 1.0 // 200x200 è quadrato
+	dstAspect := 1.0 // 400x400 è quadrato
 
 	var cropRect image.Rectangle
 	if srcAspect > dstAspect {
-		// Immagine più larga: crop orizzontalmente
+		// Immagine più larga: crop orizzontalmente (prendi il centro)
 		newWidth := int(float64(srcHeight) * dstAspect)
 		offset := (srcWidth - newWidth) / 2
-		cropRect = image.Rect(srcBounds.Min.X+offset, srcBounds.Min.Y, srcBounds.Min.X+offset+newWidth, srcBounds.Max.Y)
+		cropRect = image.Rect(offset, 0, offset+newWidth, srcHeight)
 	} else {
-		// Immagine più alta: crop verticalmente
-		newHeight := int(float64(srcWidth) / dstAspect)
+		// Immagine più alta: crop verticalmente (prendi il centro)
+		newHeight := int(float64srcWidth) / dstAspect)
 		offset := (srcHeight - newHeight) / 2
-		cropRect = image.Rect(srcBounds.Min.X, srcBounds.Min.Y+offset, srcBounds.Max.X, srcBounds.Min.Y+offset+newHeight)
+		cropRect = image.Rect(0, offset, srcWidth, offset+newHeight)
 	}
 
-	// Ridimensiona dalla porzione croppata
+	// Ridimensiona dalla porzione croppata mantenendo l'orientamento originale
 	draw.CatmullRom.Scale(thumbnail, thumbnail.Bounds(), img, cropRect, draw.Over, nil)
 
 	// Salva il thumbnail
