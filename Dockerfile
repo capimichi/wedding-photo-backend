@@ -27,5 +27,7 @@ COPY --from=builder /app/main .
 # Create media directory for photos
 RUN mkdir -p /root/media
 
+ENV GIN_MODE=release
+
 # Command to run
-CMD [ "GIN_MODE=release", "./main" ]
+CMD ["./main"]
