@@ -108,6 +108,7 @@ func (pm *PhotoManager) SavePhotoFromBytes(reader io.Reader, originalFilename st
 
 // createThumbnail crea un thumbnail di 400x400px usando la libreria imaging
 func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType string) error {
+	return nil
 	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
 
 	// Apre l'immagine originale
@@ -130,6 +131,7 @@ func (pm *PhotoManager) createThumbnail(originalPath, filename, contentType stri
 
 // createPreview crea una preview con dimensioni massime 1024x1024 mantenendo le proporzioni
 func (pm *PhotoManager) createPreview(originalPath, filename, contentType string) error {
+	return nil
 	previewPath := filepath.Join(pm.previewsDir, filename)
 
 	// Apre l'immagine originale

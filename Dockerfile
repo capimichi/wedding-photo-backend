@@ -28,4 +28,4 @@ COPY --from=builder /app/main .
 RUN mkdir -p /root/media
 
 # Command to run
-CMD ["./main"]
+CMD [ "GIN_MODE=release", "./main" ]
