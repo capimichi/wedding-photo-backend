@@ -27,25 +27,32 @@ func NewPhotoController(photoService *service.PhotoService) *PhotoController {
 // @Summary Upload di una foto
 // @Description Carica una nuova foto sul server
 // @Tags photos
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
-// @Param request body model.AddPhotoRequest true "Dati della foto da caricare"
+// @Param file formData file true "File immagine da caricare"
+// @Param imageName formData string false "Nome personalizzato per l'immagine"
 // @Success 200 {object} model.AddPhotoResponse
 // @Failure 400 {object} model.ErrorResponse
 // @Router /api/photos [post]
 func (pc *PhotoController) AddPhoto(c *gin.Context) {
-	var request model.AddPhotoRequest
-
-	// Binding del JSON body
-	if err := c.ShouldBindJSON(&request); err != nil {
+	// Recupera il file dal form
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{
-			Message: "Dati richiesta non validi: " + err.Error(),
+			Message: "Errore nel recupero del file: " + err.Error(),
 		})
 		return
 	}
+	defer file.Close()
+
+	// Recupera il nome personalizzato se fornito, altrimenti usa il nome originale
+	imageName := c.PostForm("image_name")
+	if imageName == "" {
+		imageName = header.Filename
+	}
 
 	// Salva la foto tramite il service
-	photo, err := pc.photoService.AddPhoto(request.ImageContent, request.ImageName)
+	photo, err := pc.photoService.AddPhoto(file, imageName, header.Header.Get("Content-Type"), header.Size)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{
 			Message: err.Error(),
