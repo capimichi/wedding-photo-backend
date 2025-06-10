@@ -1,11 +1,9 @@
 package service
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
+	"io"
 	"math"
-	"net/http"
 	"sort"
 	"strings"
 
@@ -73,25 +71,15 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 	return paginatedPhotos, totalPages, nil
 }
 
-// AddPhoto salva una foto da AddPhotoRequest e aggiorna la lista
-func (ps *PhotoService) AddPhoto(imageContent string, imageName string) (*model.Photo, error) {
-	// Decodifica il base64
-	imageData, err := base64.StdEncoding.DecodeString(imageContent)
-	if err != nil {
-		return nil, fmt.Errorf("errore nella decodifica base64: %v", err)
-	}
-
-	// Determina il tipo MIME dall'header dei dati
-	contentType := http.DetectContentType(imageData)
+// AddPhoto salva una foto da multipart form data e aggiorna la lista
+func (ps *PhotoService) AddPhoto(fileReader io.Reader, imageName string, contentType string, fileSize int64) (*model.Photo, error) {
+	// Verifica il tipo MIME
 	if !ps.isImageMimeType(contentType) {
 		return nil, fmt.Errorf("Il file deve essere un'immagine (JPEG, PNG, GIF, WebP)")
 	}
 
-	// Crea un reader dai dati dell'immagine DOPO la validazione
-	imageReader := bytes.NewReader(imageData)
-
 	// Salva tramite il manager
-	fileName, err := ps.photoManager.SavePhotoFromBytes(imageReader, imageName, contentType, int64(len(imageData)))
+	fileName, err := ps.photoManager.SavePhotoFromBytes(fileReader, imageName, contentType, fileSize)
 	if err != nil {
 		return nil, err
 	}
