@@ -28,63 +28,65 @@ is_image_file() {
     return 1
 }
 
-# Conta il numero totale di foto da elaborare
-total_photos=0
+# Conta il numero totale di foto da elaborare e crea array
+image_files=()
 for file in "$PHOTOS_DIR"/*; do
     if [[ -f "$file" ]] && is_image_file "$file"; then
-        ((total_photos++))
+        image_files+=("$file")
     fi
 done
 
+total_photos=${#image_files[@]}
 echo "Trovate $total_photos foto da elaborare"
+
+# Shuffle dell'array usando shuf
+if [[ $total_photos -gt 0 ]]; then
+    readarray -t shuffled_files < <(printf '%s\n' "${image_files[@]}" | shuf)
+else
+    shuffled_files=()
+fi
 
 # Contatore per il progresso
 processed=0
 
-# Itera attraverso tutti i file nella directory media
-for file in "$PHOTOS_DIR"/*; do
-    # Verifica che sia un file (non una directory)
-    if [[ -f "$file" ]]; then
-        filename=$(basename "$file")
-        
-        # Verifica che sia un'immagine
-        if is_image_file "$filename"; then
-            ((processed++))
-            echo "[$processed/$total_photos] Elaborando: $filename"
-            
-            # Percorsi completi per preview e thumbnail
-            preview_path="$PREVIEWS_DIR/$filename"
-            thumbnail_path="$THUMBNAILS_DIR/$filename"
-            
-            # Crea preview se non esiste
-            if [[ ! -f "$preview_path" ]]; then
-                echo "  Creando preview..."
-                magick "$file" -auto-orient -resize 1024x1024\> -quality 85 "$preview_path"
-                if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Preview creata"
-                else
-                    echo "  ✗ Errore nella creazione della preview"
-                fi
-            else
-                echo "  ◦ Preview già esistente"
-            fi
-            
-            # Crea thumbnail se non esiste
-            if [[ ! -f "$thumbnail_path" ]]; then
-                echo "  Creando thumbnail..."
-                magick "$file" -auto-orient -resize 400x400^ -gravity center -extent 400x400 -quality 85 "$thumbnail_path"
-                if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Thumbnail creata"
-                else
-                    echo "  ✗ Errore nella creazione del thumbnail"
-                fi
-            else
-                echo "  ◦ Thumbnail già esistente"
-            fi
-            
-            echo ""
+# Itera attraverso i file shufflati
+for file in "${shuffled_files[@]}"; do
+    filename=$(basename "$file")
+    
+    ((processed++))
+    echo "[$processed/$total_photos] Elaborando: $filename"
+    
+    # Percorsi completi per preview e thumbnail
+    preview_path="$PREVIEWS_DIR/$filename"
+    thumbnail_path="$THUMBNAILS_DIR/$filename"
+    
+    # Crea preview se non esiste
+    if [[ ! -f "$preview_path" ]]; then
+        echo "  Creando preview..."
+        magick "$file" -auto-orient -resize 1024x1024\> -quality 85 "$preview_path"
+        if [[ $? -eq 0 ]]; then
+            echo "  ✓ Preview creata"
+        else
+            echo "  ✗ Errore nella creazione della preview"
         fi
+    else
+        echo "  ◦ Preview già esistente"
     fi
+    
+    # Crea thumbnail se non esiste
+    if [[ ! -f "$thumbnail_path" ]]; then
+        echo "  Creando thumbnail..."
+        magick "$file" -auto-orient -resize 400x400^ -gravity center -extent 400x400 -quality 85 "$thumbnail_path"
+        if [[ $? -eq 0 ]]; then
+            echo "  ✓ Thumbnail creata"
+        else
+            echo "  ✗ Errore nella creazione del thumbnail"
+        fi
+    else
+        echo "  ◦ Thumbnail già esistente"
+    fi
+    
+    echo ""
 done
 
 echo "Elaborazione completata!"
