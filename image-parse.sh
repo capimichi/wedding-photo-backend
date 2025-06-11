@@ -48,27 +48,7 @@ echo "Connessione a Redis stabilita. In attesa di immagini da elaborare..."
 
 # Loop infinito per elaborare le immagini dalla coda
 processed=0
-redis_failures=0
-max_redis_failures=10
-
 while true; do
-    # Verifica la connessione Redis prima di ogni operazione
-    if ! check_redis_connection; then
-        ((redis_failures++))
-        echo "Errore connessione Redis (tentativo $redis_failures/$max_redis_failures)"
-        
-        if [[ $redis_failures -ge $max_redis_failures ]]; then
-            echo "Troppi errori di connessione Redis consecutivi. Uscita."
-            exit 1
-        fi
-        
-        sleep 5
-        continue
-    fi
-    
-    # Reset del contatore errori se la connessione è OK
-    redis_failures=0
-    
     # Recupera la prossima immagine dalla coda (timeout 30 secondi)
     result=$(get_next_image_from_queue)
     
@@ -103,20 +83,19 @@ while true; do
                     echo "  ✓ Preview creata"
                 else
                     echo "  ✗ Errore nella creazione della preview"
-                    continue
                 fi
             else
                 echo "  ◦ Preview già esistente"
             fi
             
-            # Crea thumbnail dalla preview se non esiste
+            # Crea thumbnail se non esiste
             if [[ ! -f "$thumbnail_path" ]]; then
-                echo "  Creando thumbnail dalla preview..."
-                vipsthumbnail "$preview_path" -s 400x400 -o "thumbnails/$filename"
+                echo "  Creando thumbnail..."
+                vipsthumbnail "$file_path" -s 400x400 -o "thumbnails/$filename"
                 if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Thumbnail creata dalla preview"
+                    echo "  ✓ Thumbnail creata"
                 else
-                    echo "  ✗ Errore nella creazione del thumbnail dalla preview"
+                    echo "  ✗ Errore nella creazione del thumbnail"
                 fi
             else
                 echo "  ◦ Thumbnail già esistente"
