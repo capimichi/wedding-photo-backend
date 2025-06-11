@@ -38,6 +38,17 @@ check_redis_connection() {
     return $?
 }
 
+# Funzione per verificare se il risultato indica un errore di connessione
+is_redis_connection_error() {
+    local result="$1"
+    # Se il risultato è vuoto o contiene errori di connessione specifici
+    if [[ -z "$result" ]] || echo "$result" | grep -q "Could not connect\|Connection refused\|timeout\|Error"; then
+        return 0  # È un errore di connessione
+    else
+        return 1  # Non è un errore di connessione (coda vuota è normale)
+    fi
+}
+
 # Verifica connessione Redis
 if ! check_redis_connection; then
     echo "Errore: impossibile connettersi a Redis su $REDIS_HOST:$REDIS_PORT"
@@ -111,16 +122,23 @@ while true; do
             echo ""
         fi
     else
-        # Nessuna immagine nella coda o errore di connessione
-        ((failed_attempts++))
-        echo "Tentativo fallito #$failed_attempts - Nessuna immagine in coda o errore di connessione"
-        
-        if [[ $failed_attempts -ge $max_failures ]]; then
-            echo "Errore: raggiunti $max_failures tentativi falliti consecutivi. Uscita."
-            exit 1
+        # Verifica se è un errore di connessione Redis
+        if is_redis_connection_error "$result"; then
+            ((failed_attempts++))
+            echo "Errore di connessione Redis #$failed_attempts"
+            
+            if [[ $failed_attempts -ge $max_failures ]]; then
+                echo "Errore: raggiunti $max_failures errori di connessione consecutivi. Uscita."
+                exit 1
+            fi
+            
+            echo "In attesa prima del prossimo tentativo..."
+            sleep 5
+        else
+            # Coda vuota - reset failed_attempts ma non incrementare
+            failed_attempts=0
+            echo "Coda vuota, in attesa di nuove immagini..."
+            sleep 2
         fi
-        
-        echo "In attesa prima del prossimo tentativo..."
-        sleep 5
     fi
 done
