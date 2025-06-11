@@ -48,12 +48,18 @@ echo "Connessione a Redis stabilita. In attesa di immagini da elaborare..."
 
 # Loop infinito per elaborare le immagini dalla coda
 processed=0
+failed_attempts=0
+max_failures=10
+
 while true; do
     # Recupera la prossima immagine dalla coda (timeout 30 secondi)
     result=$(get_next_image_from_queue)
     
     # Verifica se abbiamo ricevuto un'immagine
     if [[ -n "$result" && "$result" != "(nil)" ]]; then
+        # Reset counter on successful operation
+        failed_attempts=0
+        
         # Estrae il nome del file dal risultato di Redis
         # Il formato è: "1) queue_name\n2) filename"
         filename=$(echo "$result" | tail -n 1)
@@ -105,7 +111,16 @@ while true; do
             echo ""
         fi
     else
-        # Nessuna immagine nella coda, continua il loop
-        echo "Nessuna immagine in coda, in attesa..."
+        # Nessuna immagine nella coda o errore di connessione
+        ((failed_attempts++))
+        echo "Tentativo fallito #$failed_attempts - Nessuna immagine in coda o errore di connessione"
+        
+        if [[ $failed_attempts -ge $max_failures ]]; then
+            echo "Errore: raggiunti $max_failures tentativi falliti consecutivi. Uscita."
+            exit 1
+        fi
+        
+        echo "In attesa prima del prossimo tentativo..."
+        sleep 5
     fi
 done
