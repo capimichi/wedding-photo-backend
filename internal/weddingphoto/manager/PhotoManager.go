@@ -214,3 +214,17 @@ func (pm *PhotoManager) getExtensionFromMimeType(mimeType string) string {
 		return ".jpg" // default
 	}
 }
+
+// ThumbnailExists verifica se il thumbnail di un'immagine esiste
+func (pm *PhotoManager) ThumbnailExists(filename string) bool {
+	thumbnailPath := filepath.Join(pm.thumbnailsDir, filename)
+	_, err := os.Stat(thumbnailPath)
+	return !os.IsNotExist(err)
+}
+
+// PreviewExists verifica se la preview di un'immagine esiste
+func (pm *PhotoManager) PreviewExists(filename string) bool {
+	previewPath := filepath.Join(pm.previewsDir, filename)
+	_, err := os.Stat(previewPath)
+	return !os.IsNotExist(err)
+}
