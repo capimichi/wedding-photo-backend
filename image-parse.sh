@@ -63,7 +63,8 @@ for file in "${shuffled_files[@]}"; do
     # Crea preview se non esiste
     if [[ ! -f "$preview_path" ]]; then
         echo "  Creando preview..."
-        magick "$file" -auto-orient -resize 1024x1024\> -quality 85 "$preview_path"
+        # magick "$file" -auto-orient -resize 1024x1024\> -quality 85 "$preview_path"
+        vipsthumbnail "$file" -s 1024x1024 -o "previews/$filename"
         if [[ $? -eq 0 ]]; then
             echo "  ✓ Preview creata"
         else
@@ -76,7 +77,8 @@ for file in "${shuffled_files[@]}"; do
     # Crea thumbnail se non esiste
     if [[ ! -f "$thumbnail_path" ]]; then
         echo "  Creando thumbnail..."
-        magick "$file" -auto-orient -resize 400x400^ -gravity center -extent 400x400 -quality 85 "$thumbnail_path"
+        # magick "$file" -auto-orient -resize 400x400^ -gravity center -extent 400x400 -quality 85 "$thumbnail_path"
+        vipsthumbnail "$file" -s 400x400 -o "thumbnails/$filename"
         if [[ $? -eq 0 ]]; then
             echo "  ✓ Thumbnail creata"
         else
