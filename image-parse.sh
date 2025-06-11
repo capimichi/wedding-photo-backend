@@ -81,19 +81,6 @@ while true; do
             preview_path="$PREVIEWS_DIR/$filename"
             thumbnail_path="$THUMBNAILS_DIR/$filename"
             
-            # Crea preview se non esiste
-            if [[ ! -f "$preview_path" ]]; then
-                echo "  Creando preview..."
-                vipsthumbnail "$file_path" -s 1024x1024 -o "previews/$filename"
-                if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Preview creata"
-                else
-                    echo "  ✗ Errore nella creazione della preview"
-                fi
-            else
-                echo "  ◦ Preview già esistente"
-            fi
-            
             # Crea thumbnail se non esiste
             if [[ ! -f "$thumbnail_path" ]]; then
                 echo "  Creando thumbnail..."
@@ -105,6 +92,19 @@ while true; do
                 fi
             else
                 echo "  ◦ Thumbnail già esistente"
+            fi
+            
+            # Crea preview se non esiste
+            if [[ ! -f "$preview_path" ]]; then
+                echo "  Creando preview..."
+                vipsthumbnail "$file_path" -s 1024x1024 -o "previews/$filename"
+                if [[ $? -eq 0 ]]; then
+                    echo "  ✓ Preview creata"
+                else
+                    echo "  ✗ Errore nella creazione della preview"
+                fi
+            else
+                echo "  ◦ Preview già esistente"
             fi
             
             echo "  ✓ Elaborazione completata per: $filename"
