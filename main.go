@@ -54,6 +54,9 @@ func main() {
 	port := util.GetEnv("PORT", "8739")
 	baseUrl := util.GetEnv("BASE_URL", "http://localhost:8739")
 	photosDir := util.GetEnv("PHOTOS_DIR", "media")
+	redisAddr := util.GetEnv("REDIS_ADDR", "localhost:6379")
+	redisPassword := util.GetEnv("REDIS_PASSWORD", "")
+	redisDB := 0 // util.GetEnvAsInt("REDIS_DB", 0) se hai una funzione per int
 
 	// use net/url to parse the baseUrl and set the swagger Host, Scheme and BasePath
 	parsedUrl, err := url.Parse(baseUrl)
@@ -71,7 +74,16 @@ func main() {
 
 	photoManager := manager.NewPhotoManager(photosDir)
 	urlManager := manager.NewUrlManager(baseUrl)
-	photoService := service.NewPhotoService(photoManager, urlManager)
+	queueManager := manager.NewQueueManager(redisAddr, redisPassword, redisDB)
+
+	// Testa la connessione Redis
+	if err := queueManager.TestConnection(); err != nil {
+		log.Printf("Attenzione: errore nella connessione a Redis: %v", err)
+	} else {
+		log.Println("Connessione a Redis stabilita con successo")
+	}
+
+	photoService := service.NewPhotoService(photoManager, urlManager, queueManager)
 	photoController := controller.NewPhotoController(photoService)
 
 	// Definisce le route API

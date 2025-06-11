@@ -15,13 +15,15 @@ import (
 type PhotoService struct {
 	photoManager *manager.PhotoManager
 	urlManager   *manager.UrlManager
+	queueManager *manager.QueueManager
 }
 
 // NewPhotoService crea una nuova istanza del service
-func NewPhotoService(photoManager *manager.PhotoManager, urlManager *manager.UrlManager) *PhotoService {
+func NewPhotoService(photoManager *manager.PhotoManager, urlManager *manager.UrlManager, queueManager *manager.QueueManager) *PhotoService {
 	return &PhotoService{
 		photoManager: photoManager,
 		urlManager:   urlManager,
+		queueManager: queueManager,
 	}
 }
 
@@ -71,7 +73,7 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 	return paginatedPhotos, totalPages, nil
 }
 
-// AddPhoto salva una foto da multipart form data e aggiorna la lista
+// AddPhoto salva una foto da multipart form data e aggiunge alla coda di elaborazione
 func (ps *PhotoService) AddPhoto(fileReader io.Reader, imageName string, contentType string, fileSize int64) (*model.Photo, error) {
 	// Verifica il tipo MIME
 	if !ps.isImageMimeType(contentType) {
@@ -82,6 +84,12 @@ func (ps *PhotoService) AddPhoto(fileReader io.Reader, imageName string, content
 	fileName, err := ps.photoManager.SavePhotoFromBytes(fileReader, imageName, contentType, fileSize)
 	if err != nil {
 		return nil, err
+	}
+
+	// Aggiunge l'immagine alla coda di elaborazione
+	if err := ps.queueManager.AddImageToQueue(fileName); err != nil {
+		fmt.Printf("Errore nell'aggiunta dell'immagine alla coda: %v\n", err)
+		// Non restituiamo errore, il file è stato comunque salvato
 	}
 
 	// Crea e restituisce l'oggetto Photo con URL completo

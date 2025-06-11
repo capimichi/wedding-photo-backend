@@ -8,6 +8,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
+	github.com/redis/go-redis/v9 v9.10.0
 	github.com/swaggo/gin-swagger v1.4.0
 	github.com/swaggo/swag v1.7.8
 )
@@ -17,7 +18,9 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect

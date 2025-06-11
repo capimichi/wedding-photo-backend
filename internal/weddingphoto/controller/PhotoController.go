@@ -29,7 +29,7 @@ func NewPhotoController(photoService *service.PhotoService) *PhotoController {
 // @Tags photos
 // @Accept multipart/form-data
 // @Produce json
-// @Param file formData file true "File immagine da caricare"
+// @Param fiimagele formData file true "File immagine da caricare"
 // @Param imageName formData string false "Nome personalizzato per l'immagine"
 // @Success 200 {object} model.AddPhotoResponse
 // @Failure 400 {object} model.ErrorResponse

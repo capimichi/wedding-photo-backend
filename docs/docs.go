@@ -80,7 +80,7 @@ var doc = `{
             "post": {
                 "description": "Carica una nuova foto sul server",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -91,13 +91,17 @@ var doc = `{
                 "summary": "Upload di una foto",
                 "parameters": [
                     {
-                        "description": "Dati della foto da caricare",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.AddPhotoRequest"
-                        }
+                        "type": "file",
+                        "description": "File immagine da caricare",
+                        "name": "fiimagele",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nome personalizzato per l'immagine",
+                        "name": "imageName",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -118,23 +122,6 @@ var doc = `{
         }
     },
     "definitions": {
-        "model.AddPhotoRequest": {
-            "type": "object",
-            "required": [
-                "image_content",
-                "image_name"
-            ],
-            "properties": {
-                "image_content": {
-                    "description": "Immagine in formato base64",
-                    "type": "string"
-                },
-                "image_name": {
-                    "description": "Nome dell'immagine",
-                    "type": "string"
-                }
-            }
-        },
         "model.AddPhotoResponse": {
             "type": "object",
             "required": [
@@ -189,6 +176,7 @@ var doc = `{
             "required": [
                 "image_name",
                 "image_url",
+                "preview_url",
                 "thumbnail_url"
             ],
             "properties": {
@@ -198,6 +186,10 @@ var doc = `{
                 },
                 "image_url": {
                     "description": "URL dell'immagine",
+                    "type": "string"
+                },
+                "preview_url": {
+                    "description": "URL dell'anteprima",
                     "type": "string"
                 },
                 "thumbnail_url": {

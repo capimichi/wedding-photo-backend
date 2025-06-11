@@ -6,90 +6,106 @@ PHOTOS_DIR="$MEDIA_DIR"
 PREVIEWS_DIR="$MEDIA_DIR/previews"
 THUMBNAILS_DIR="$MEDIA_DIR/thumbnails"
 
+# Redis configuration
+REDIS_HOST="${REDIS_HOST:-localhost}"
+REDIS_PORT="${REDIS_PORT:-6379}"
+REDIS_PASSWORD="${REDIS_PASSWORD:-}"
+QUEUE_NAME="image_processing_queue"
+
 # Crea le directory se non esistono
 mkdir -p "$PREVIEWS_DIR"
 mkdir -p "$THUMBNAILS_DIR"
 
-# Estensioni supportate (case insensitive)
-EXTENSIONS=("jpg" "jpeg" "png" "gif" "webp")
+echo "Inizio elaborazione foto dalla coda Redis..."
+echo "Connessione a Redis: $REDIS_HOST:$REDIS_PORT"
 
-echo "Inizio elaborazione foto..."
-
-# Funzione per verificare se un file è un'immagine
-is_image_file() {
-    local file="$1"
-    local ext=$(echo "${file##*.}" | tr '[:upper:]' '[:lower:]')
-    
-    for supported_ext in "${EXTENSIONS[@]}"; do
-        if [[ "$ext" == "$supported_ext" ]]; then
-            return 0
-        fi
-    done
-    return 1
+# Funzione per recuperare la prossima immagine dalla coda Redis
+get_next_image_from_queue() {
+    if [[ -n "$REDIS_PASSWORD" ]]; then
+        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" BRPOP "$QUEUE_NAME" 30
+    else
+        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" BRPOP "$QUEUE_NAME" 30
+    fi
 }
 
-# Conta il numero totale di foto da elaborare e crea array
-image_files=()
-for file in "$PHOTOS_DIR"/*; do
-    if [[ -f "$file" ]] && is_image_file "$file"; then
-        image_files+=("$file")
+# Funzione per verificare se Redis è raggiungibile
+check_redis_connection() {
+    if [[ -n "$REDIS_PASSWORD" ]]; then
+        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
+    else
+        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping >/dev/null 2>&1
     fi
-done
+    return $?
+}
 
-total_photos=${#image_files[@]}
-echo "Trovate $total_photos foto da elaborare"
-
-# Shuffle dell'array usando shuf
-if [[ $total_photos -gt 0 ]]; then
-    readarray -t shuffled_files < <(printf '%s\n' "${image_files[@]}" | shuf)
-else
-    shuffled_files=()
+# Verifica connessione Redis
+if ! check_redis_connection; then
+    echo "Errore: impossibile connettersi a Redis su $REDIS_HOST:$REDIS_PORT"
+    exit 1
 fi
 
-# Contatore per il progresso
+echo "Connessione a Redis stabilita. In attesa di immagini da elaborare..."
+
+# Loop infinito per elaborare le immagini dalla coda
 processed=0
-
-# Itera attraverso i file shufflati
-for file in "${shuffled_files[@]}"; do
-    filename=$(basename "$file")
+while true; do
+    # Recupera la prossima immagine dalla coda (timeout 30 secondi)
+    result=$(get_next_image_from_queue)
     
-    ((processed++))
-    echo "[$processed/$total_photos] Elaborando: $filename"
-    
-    # Percorsi completi per preview e thumbnail
-    preview_path="$PREVIEWS_DIR/$filename"
-    thumbnail_path="$THUMBNAILS_DIR/$filename"
-    
-    # Crea preview se non esiste
-    if [[ ! -f "$preview_path" ]]; then
-        echo "  Creando preview..."
-        # magick "$file" -auto-orient -resize 1024x1024\> -quality 85 "$preview_path"
-        vipsthumbnail "$file" -s 1024x1024 -o "previews/$filename"
-        if [[ $? -eq 0 ]]; then
-            echo "  ✓ Preview creata"
-        else
-            echo "  ✗ Errore nella creazione della preview"
+    # Verifica se abbiamo ricevuto un'immagine
+    if [[ -n "$result" && "$result" != "(nil)" ]]; then
+        # Estrae il nome del file dal risultato di Redis
+        # Il formato è: "1) queue_name\n2) filename"
+        filename=$(echo "$result" | tail -n 1)
+        
+        if [[ -n "$filename" ]]; then
+            ((processed++))
+            echo "[$processed] Elaborando: $filename"
+            
+            # Percorso completo del file originale
+            file_path="$PHOTOS_DIR/$filename"
+            
+            # Verifica che il file esista
+            if [[ ! -f "$file_path" ]]; then
+                echo "  ✗ File non trovato: $file_path"
+                continue
+            fi
+            
+            # Percorsi completi per preview e thumbnail
+            preview_path="$PREVIEWS_DIR/$filename"
+            thumbnail_path="$THUMBNAILS_DIR/$filename"
+            
+            # Crea preview se non esiste
+            if [[ ! -f "$preview_path" ]]; then
+                echo "  Creando preview..."
+                vipsthumbnail "$file_path" -s 1024x1024 -o "previews/$filename"
+                if [[ $? -eq 0 ]]; then
+                    echo "  ✓ Preview creata"
+                else
+                    echo "  ✗ Errore nella creazione della preview"
+                fi
+            else
+                echo "  ◦ Preview già esistente"
+            fi
+            
+            # Crea thumbnail se non esiste
+            if [[ ! -f "$thumbnail_path" ]]; then
+                echo "  Creando thumbnail..."
+                vipsthumbnail "$file_path" -s 400x400 -o "thumbnails/$filename"
+                if [[ $? -eq 0 ]]; then
+                    echo "  ✓ Thumbnail creata"
+                else
+                    echo "  ✗ Errore nella creazione del thumbnail"
+                fi
+            else
+                echo "  ◦ Thumbnail già esistente"
+            fi
+            
+            echo "  ✓ Elaborazione completata per: $filename"
+            echo ""
         fi
     else
-        echo "  ◦ Preview già esistente"
+        # Nessuna immagine nella coda, continua il loop
+        echo "Nessuna immagine in coda, in attesa..."
     fi
-    
-    # Crea thumbnail se non esiste
-    if [[ ! -f "$thumbnail_path" ]]; then
-        echo "  Creando thumbnail..."
-        # magick "$file" -auto-orient -resize 400x400^ -gravity center -extent 400x400 -quality 85 "$thumbnail_path"
-        vipsthumbnail "$file" -s 400x400 -o "thumbnails/$filename"
-        if [[ $? -eq 0 ]]; then
-            echo "  ✓ Thumbnail creata"
-        else
-            echo "  ✗ Errore nella creazione del thumbnail"
-        fi
-    else
-        echo "  ◦ Thumbnail già esistente"
-    fi
-    
-    echo ""
 done
-
-echo "Elaborazione completata!"
-echo "Foto elaborate: $processed"
