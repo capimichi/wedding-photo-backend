@@ -38,19 +38,17 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 	var photos []model.Photo
 	for _, imageName := range imageNames {
 		// Verifica se thumbnail e preview esistono
-		thumbnailUrl := ps.urlManager.GetThumbnailUrl(imageName)
-		if !ps.photoManager.ThumbnailExists(imageName) {
-			thumbnailUrl = "https://placehold.co/400x400?text=Generazione+immagine+in+corso"
+		if !ps.photoManager.ThumbnailExists(imageName) || !ps.photoManager.PreviewExists(imageName) {
+			// Salta la foto se thumbnail o preview non esistono
+			continue
 		}
 
+		thumbnailUrl := ps.urlManager.GetThumbnailUrl(imageName)
 		previewUrl := ps.urlManager.GetPreviewUrl(imageName)
-		if !ps.photoManager.PreviewExists(imageName) {
-			previewUrl = "https://placehold.co/400x400?text=Generazione+immagine+in+corso"
-		}
 
 		photos = append(photos, model.Photo{
-			ImageName:    imageName,
-			ImageUrl:     ps.urlManager.GetImageUrl(imageName),
+			ImageName: imageName,
+			// ImageUrl:     ps.urlManager.GetImageUrl(imageName),
 			ThumbnailUrl: thumbnailUrl,
 			PreviewUrl:   previewUrl,
 		})
