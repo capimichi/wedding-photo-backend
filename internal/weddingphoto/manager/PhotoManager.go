@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"math/rand"
@@ -227,4 +228,68 @@ func (pm *PhotoManager) PreviewExists(filename string) bool {
 	previewPath := filepath.Join(pm.previewsDir, filename)
 	_, err := os.Stat(previewPath)
 	return !os.IsNotExist(err)
+}
+
+// DetectMimeTypeFromBytes rileva il MIME type reale leggendo i magic bytes
+func (pm *PhotoManager) DetectMimeTypeFromBytes(reader io.Reader) (string, io.Reader, error) {
+	// Legge i primi 512 bytes per il rilevamento del MIME type
+	buffer := make([]byte, 512)
+	n, err := reader.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", nil, fmt.Errorf("errore nella lettura dei bytes: %v", err)
+	}
+
+	// Crea un nuovo reader che include i bytes letti + il resto del file originale
+	newReader := io.MultiReader(bytes.NewReader(buffer[:n]), reader)
+
+	// Rileva il MIME type dai magic bytes
+	mimeType := pm.detectMimeFromMagicBytes(buffer[:n])
+
+	return mimeType, newReader, nil
+}
+
+// detectMimeFromMagicBytes rileva il MIME type dai magic bytes
+func (pm *PhotoManager) detectMimeFromMagicBytes(data []byte) string {
+	if len(data) < 8 {
+		return ""
+	}
+
+	// JPEG
+	if len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+		return "image/jpeg"
+	}
+
+	// PNG
+	if len(data) >= 8 && bytes.Equal(data[:8], []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}) {
+		return "image/png"
+	}
+
+	// GIF87a or GIF89a
+	if len(data) >= 6 && (bytes.Equal(data[:6], []byte("GIF87a")) || bytes.Equal(data[:6], []byte("GIF89a"))) {
+		return "image/gif"
+	}
+
+	// WebP
+	if len(data) >= 12 && bytes.Equal(data[:4], []byte("RIFF")) && bytes.Equal(data[8:12], []byte("WEBP")) {
+		return "image/webp"
+	}
+
+	return ""
+}
+
+// IsValidImageMimeType verifica se il MIME type è di un'immagine supportata
+func (pm *PhotoManager) IsValidImageMimeType(mimeType string) bool {
+	validTypes := []string{
+		"image/jpeg",
+		"image/png",
+		"image/gif",
+		"image/webp",
+	}
+
+	for _, validType := range validTypes {
+		if mimeType == validType {
+			return true
+		}
+	}
+	return false
 }

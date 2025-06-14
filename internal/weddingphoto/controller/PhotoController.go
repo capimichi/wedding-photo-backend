@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"wedding-photo-backend/internal/weddingphoto/model"
 	"wedding-photo-backend/internal/weddingphoto/service"
@@ -54,7 +55,14 @@ func (pc *PhotoController) AddPhoto(c *gin.Context) {
 	// Salva la foto tramite il service
 	photo, err := pc.photoService.AddPhoto(file, imageName, header.Header.Get("Content-Type"), header.Size)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		// Gestione più specifica degli errori di validazione
+		statusCode := http.StatusBadRequest
+		if strings.Contains(err.Error(), "formato non è supportato") ||
+			strings.Contains(err.Error(), "non è un'immagine valida") {
+			statusCode = http.StatusUnsupportedMediaType
+		}
+
+		c.JSON(statusCode, model.ErrorResponse{
 			Message: err.Error(),
 		})
 		return

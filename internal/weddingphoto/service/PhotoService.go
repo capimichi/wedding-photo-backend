@@ -86,13 +86,25 @@ func (ps *PhotoService) GetPhotoList(page, perPage int) ([]model.Photo, int, err
 
 // AddPhoto salva una foto da multipart form data e aggiunge alla coda di elaborazione
 func (ps *PhotoService) AddPhoto(fileReader io.Reader, imageName string, contentType string, fileSize int64) (*model.Photo, error) {
-	// Verifica il tipo MIME
-	if !ps.isImageMimeType(contentType) {
-		return nil, fmt.Errorf("Il file deve essere un'immagine (JPEG, PNG, GIF, WebP)")
+	// Rileva il MIME type reale dal contenuto del file
+	realMimeType, newReader, err := ps.photoManager.DetectMimeTypeFromBytes(fileReader)
+	if err != nil {
+		return nil, fmt.Errorf("errore nella lettura del file: %v", err)
 	}
 
-	// Salva tramite il manager
-	fileName, err := ps.photoManager.SavePhotoFromBytes(fileReader, imageName, contentType, fileSize)
+	// Verifica che il MIME type reale sia un'immagine supportata
+	if !ps.photoManager.IsValidImageMimeType(realMimeType) {
+		return nil, fmt.Errorf("il file non è un'immagine valida o il formato non è supportato")
+	}
+
+	// Verifica che il MIME type dichiarato corrisponda a quello reale (opzionale, per maggiore sicurezza)
+	if !ps.isImageMimeType(contentType) || !ps.mimeTypesMatch(contentType, realMimeType) {
+		// Log di warning ma usa il MIME type reale
+		fmt.Printf("Warning: MIME type dichiarato (%s) diverso da quello reale (%s)\n", contentType, realMimeType)
+	}
+
+	// Usa il MIME type reale per il salvataggio
+	fileName, err := ps.photoManager.SavePhotoFromBytes(newReader, imageName, realMimeType, fileSize)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +124,16 @@ func (ps *PhotoService) AddPhoto(fileReader io.Reader, imageName string, content
 	}
 
 	return photo, nil
+}
+
+// mimeTypesMatch verifica se i MIME types sono compatibili
+func (ps *PhotoService) mimeTypesMatch(declared, real string) bool {
+	// Normalizza i MIME types
+	if declared == "image/jpg" {
+		declared = "image/jpeg"
+	}
+
+	return declared == real || (declared == "image/jpeg" && real == "image/jpeg")
 }
 
 // isImageMimeType verifica se il MIME type è di un'immagine
