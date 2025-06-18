@@ -35,7 +35,7 @@ while true; do
         # Crea thumbnail se non esiste
         if [[ ! -f "$thumbnails_path" ]]; then
             echo "Creando thumbnail per: $filename"
-            vipsthumbnail "$previews_path" -s 400x400 -o "thumbnails/$filename"
+            vipsthumbnail "$file_path" -s 400x400 -o "thumbnails/$filename"
             if [[ $? -eq 0 ]]; then
                 echo "Thumbnail creata con successo: $filename"
             else
