@@ -34,6 +34,7 @@ func NewQueueManager(redisAddr, redisPassword string, redisDB int) *QueueManager
 
 // AddImageToQueue aggiunge un'immagine alla coda di elaborazione
 func (qm *QueueManager) AddImageToQueue(imageName string) error {
+	return nil // Modifica temporanea per togliere la coda
 	err := qm.client.LPush(qm.ctx, IMAGE_PROCESSING_QUEUE, imageName).Err()
 	if err != nil {
 		return fmt.Errorf("errore nell'aggiunta dell'immagine alla coda: %v", err)

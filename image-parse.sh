@@ -6,139 +6,48 @@ PHOTOS_DIR="$MEDIA_DIR"
 PREVIEWS_DIR="$MEDIA_DIR/previews"
 THUMBNAILS_DIR="$MEDIA_DIR/thumbnails"
 
-# Redis configuration
-REDIS_HOST="${REDIS_HOST:-localhost}"
-REDIS_PORT="${REDIS_PORT:-6379}"
-REDIS_PASSWORD="${REDIS_PASSWORD:-}"
-QUEUE_NAME="image_processing_queue"
-
 # Crea le directory se non esistono
 mkdir -p "$PREVIEWS_DIR"
 mkdir -p "$THUMBNAILS_DIR"
 
-echo "Inizio elaborazione foto dalla coda Redis..."
-echo "Connessione a Redis: $REDIS_HOST:$REDIS_PORT"
-
-# Funzione per recuperare la prossima immagine dalla coda Redis
-get_next_image_from_queue() {
-    if [[ -n "$REDIS_PASSWORD" ]]; then
-        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" BRPOP "$QUEUE_NAME" 30
-    else
-        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" BRPOP "$QUEUE_NAME" 30
-    fi
-}
-
-# Funzione per verificare se Redis è raggiungibile
-check_redis_connection() {
-    if [[ -n "$REDIS_PASSWORD" ]]; then
-        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping >/dev/null 2>&1
-    else
-        redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping >/dev/null 2>&1
-    fi
-    return $?
-}
-
-# Funzione per verificare se il risultato indica un errore di connessione
-is_redis_connection_error() {
-    local result="$1"
-    # Se il risultato è vuoto o contiene errori di connessione specifici
-    if [[ -z "$result" ]] || echo "$result" | grep -q "Could not connect\|Connection refused\|timeout\|Error"; then
-        return 0  # È un errore di connessione
-    else
-        return 1  # Non è un errore di connessione (coda vuota è normale)
-    fi
-}
-
-# Verifica connessione Redis
-if ! check_redis_connection; then
-    echo "Errore: impossibile connettersi a Redis su $REDIS_HOST:$REDIS_PORT"
-    exit 1
-fi
-
-echo "Connessione a Redis stabilita. In attesa di immagini da elaborare..."
-
-# Loop infinito per elaborare le immagini dalla coda
-processed=0
-failed_attempts=0
-max_failures=10
-
 while true; do
-    # Recupera la prossima immagine dalla coda (timeout 30 secondi)
-    result=$(get_next_image_from_queue)
-    
-    # Verifica se abbiamo ricevuto un'immagine
-    if [[ -n "$result" && "$result" != "(nil)" ]]; then
-        # Reset counter on successful operation
-        failed_attempts=0
-        
-        # Estrae il nome del file dal risultato di Redis
-        # Il formato è: "1) queue_name\n2) filename"
-        filename=$(echo "$result" | tail -n 1)
-        
-        if [[ -n "$filename" ]]; then
-            ((processed++))
-            echo "[$processed] Elaborando: $filename"
-            
-            # Percorso completo del file originale
-            file_path="$PHOTOS_DIR/$filename"
-            
-            # Verifica che il file esista
-            if [[ ! -f "$file_path" ]]; then
-                echo "  ✗ File non trovato: $file_path"
-                continue
-            fi
-            
-            # Percorsi completi per preview e thumbnail
-            preview_path="$PREVIEWS_DIR/$filename"
-            thumbnail_path="$THUMBNAILS_DIR/$filename"
-            
-            # Crea thumbnail se non esiste
-            if [[ ! -f "$thumbnail_path" ]]; then
-                echo "  Creando thumbnail..."
-                vipsthumbnail "$file_path" -s 400x400 -o "thumbnails/$filename"
-                if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Thumbnail creata"
-                else
-                    echo "  ✗ Errore nella creazione del thumbnail"
-                fi
+    found_files=0
+
+    # Trova i file creati/modificati negli ultimi 240 minuti
+    while IFS= read -r file; do
+        filename=$(basename "$file")
+        previews_path="$PREVIEWS_DIR/$filename"
+        thumbnails_path="$THUMBNAILS_DIR/$filename"
+        file_path="$file"
+
+        # Crea preview se non esiste
+        if [[ ! -f "$previews_path" ]]; then
+            echo "Creando preview per: $filename"
+            vipsthumbnail "$file_path" -s 1024x1024 -o "$previews_path"
+            if [[ $? -eq 0 ]]; then
+                echo "Preview creata con successo: $filename"
             else
-                echo "  ◦ Thumbnail già esistente"
+                echo "Errore nella creazione della preview per: $filename"
             fi
-            
-            # Crea preview se non esiste
-            if [[ ! -f "$preview_path" ]]; then
-                echo "  Creando preview..."
-                vipsthumbnail "$file_path" -s 1024x1024 -o "previews/$filename"
-                if [[ $? -eq 0 ]]; then
-                    echo "  ✓ Preview creata"
-                else
-                    echo "  ✗ Errore nella creazione della preview"
-                fi
+            found_files=1
+        fi
+
+        # Crea thumbnail se non esiste
+        if [[ ! -f "$thumbnails_path" ]]; then
+            echo "Creando thumbnail per: $filename"
+            vipsthumbnail "$previews_path" -s 400x400 -o "$thumbnails_path"
+            if [[ $? -eq 0 ]]; then
+                echo "Thumbnail creata con successo: $filename"
             else
-                echo "  ◦ Preview già esistente"
+                echo "Errore nella creazione della thumbnail per: $filename"
             fi
-            
-            echo "  ✓ Elaborazione completata per: $filename"
-            echo ""
+            found_files=1
         fi
-    else
-        # Verifica se è un errore di connessione Redis
-        if is_redis_connection_error "$result"; then
-            ((failed_attempts++))
-            echo "Errore di connessione Redis #$failed_attempts"
-            
-            if [[ $failed_attempts -ge $max_failures ]]; then
-                echo "Errore: raggiunti $max_failures errori di connessione consecutivi. Uscita."
-                exit 1
-            fi
-            
-            echo "In attesa prima del prossimo tentativo..."
-            sleep 5
-        else
-            # Coda vuota - reset failed_attempts ma non incrementare
-            failed_attempts=0
-            echo "Coda vuota, in attesa di nuove immagini..."
-            sleep 2
-        fi
+    done < <(find "$PHOTOS_DIR" -type f -mmin -240)
+
+    # Se non sono stati trovati file da elaborare, aspetta 5 secondi
+    if [[ $found_files -eq 0 ]]; then
+        echo "Nessun file da elaborare. Attendo 5 secondi..."
+        sleep 5
     fi
 done
