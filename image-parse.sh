@@ -23,7 +23,7 @@ while true; do
         # Crea preview se non esiste
         if [[ ! -f "$previews_path" ]]; then
             echo "Creando preview per: $filename"
-            vipsthumbnail "$file_path" -s 1024x1024 -o "$previews_path"
+            vipsthumbnail "$file_path" -s 1024x1024 -o "previews/$filename"
             if [[ $? -eq 0 ]]; then
                 echo "Preview creata con successo: $filename"
             else
@@ -35,7 +35,7 @@ while true; do
         # Crea thumbnail se non esiste
         if [[ ! -f "$thumbnails_path" ]]; then
             echo "Creando thumbnail per: $filename"
-            vipsthumbnail "$previews_path" -s 400x400 -o "$thumbnails_path"
+            vipsthumbnail "$previews_path" -s 400x400 -o "thumbnails/$filename"
             if [[ $? -eq 0 ]]; then
                 echo "Thumbnail creata con successo: $filename"
             else
